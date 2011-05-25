@@ -3,7 +3,8 @@ module CASClient
   class Client
     attr_reader :cas_base_url 
     attr_reader :log, :username_session_key, :extra_attributes_session_key
-    attr_writer :login_url, :validate_url, :proxy_url, :logout_url, :service_url
+    attr_writer :login_url, :validate_url, :proxy_url, :logout_url, :service_url,
+                :ticket_param_key, :extra_login_query_params, :service_param_key
     attr_accessor :proxy_callback_url, :proxy_retrieval_url
     
     def initialize(conf = nil)
@@ -28,6 +29,10 @@ module CASClient
       
       @username_session_key         = conf[:username_session_key] || :cas_user
       @extra_attributes_session_key = conf[:extra_attributes_session_key] || :cas_extra_attributes
+      @ticket_param_key           = conf[:ticket_param_key] || :ticket
+      
+      @extra_login_query_params = conf[:extra_login_query_params] || {}
+      @service_param_key        = conf[:service_param_key] || "service"
       
       @log = CASClient::LoggerWrapper.new
       @log.set_real_logger(conf[:logger]) if conf[:logger]
@@ -85,8 +90,11 @@ module CASClient
     def validate_service_ticket(st)
       uri = URI.parse(validate_url)
       h = uri.query ? query_to_hash(uri.query) : {}
-      h['service'] = st.service
-      h['ticket'] = st.ticket
+      @extra_login_query_params.each do |key, value|
+        h[key.to_s] = value
+      end
+      h[@service_param_key] = st.service
+      h[@ticket_param_key] = st.ticket
       h['renew'] = 1 if st.renew
       h['pgtUrl'] = proxy_callback_url if proxy_callback_url
       uri.query = hash_to_query(h)
@@ -207,7 +215,13 @@ module CASClient
     
     def add_service_to_login_url(service_url)
       uri = URI.parse(login_url)
-      uri.query = (uri.query ? uri.query + "&" : "") + "service=#{CGI.escape(service_url)}"
+      uri.query = (uri.query ? uri.query + "&" : "")
+      if @extra_login_query_params.count > 0
+        uri.query += @extra_login_query_params.map { |key, value| "#{key}=#{value}" }.join('&')
+        uri.query += "&"
+      end
+        
+      uri.query += "#{@service_param_key}=#{CGI.escape(service_url)}"
       uri.to_s
     end
     

@@ -333,7 +333,7 @@ module CASClient
           end
           
           def read_ticket(controller)
-            ticket = controller.params[:ticket]
+            ticket = controller.params[config[:ticket_param_key]]
             
             return nil unless ticket
             
