@@ -4,7 +4,8 @@ module CASClient
     attr_reader :cas_base_url 
     attr_reader :log, :username_session_key, :extra_attributes_session_key
     attr_writer :login_url, :validate_url, :proxy_url, :logout_url, :service_url,
-                :ticket_param_key, :extra_login_query_params, :service_param_key
+                :ticket_param_key, :extra_login_query_params, :service_param_key,
+                :escape_service_url
     attr_accessor :proxy_callback_url, :proxy_retrieval_url
     
     def initialize(conf = nil)
@@ -33,6 +34,8 @@ module CASClient
       
       @extra_login_query_params = conf[:extra_login_query_params] || {}
       @service_param_key        = conf[:service_param_key] || "service"
+      
+      @escape_service_url = conf[:escape_service_url] || true
       
       @log = CASClient::LoggerWrapper.new
       @log.set_real_logger(conf[:logger]) if conf[:logger]
@@ -220,8 +223,13 @@ module CASClient
         uri.query += @extra_login_query_params.map { |key, value| "#{key}=#{value}" }.join('&')
         uri.query += "&"
       end
-        
-      uri.query += "#{@service_param_key}=#{CGI.escape(service_url)}"
+      
+      if @escape_service_url
+        uri.query += "#{@service_param_key}=#{service_url}"
+      else
+        uri.query += "#{@service_param_key}=#{CGI.escape(service_url)}"
+      end
+      
       uri.to_s
     end
     
