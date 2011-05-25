@@ -40,7 +40,7 @@ module CASClient
         "CAS response is empty/blank." if raw_text.blank?
       @parse_datetime = Time.now
       
-      if raw_text =~ /^(yes|no)\n(.*?)\n$/m
+      if raw_text =~ /^(yes|no)(\r)?\n(.*?)(\r)?\n$/m
         @protocol = 1.0
         @valid = $~[1] == 'yes'
         @user = $~[2]
