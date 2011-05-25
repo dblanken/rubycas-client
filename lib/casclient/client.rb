@@ -216,7 +216,7 @@ module CASClient
     def add_service_to_login_url(service_url)
       uri = URI.parse(login_url)
       uri.query = (uri.query ? uri.query + "&" : "")
-      if @extra_login_query_params.count > 0
+      unless @extra_login_query_params.empty?
         uri.query += @extra_login_query_params.map { |key, value| "#{key}=#{value}" }.join('&')
         uri.query += "&"
       end
